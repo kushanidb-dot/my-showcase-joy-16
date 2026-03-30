@@ -65,7 +65,7 @@ export async function getPortfolioData(): Promise<PortfolioData> {
 export async function savePortfolioData(portfolioData: PortfolioData) {
   const { error } = await supabase
     .from("portfolio_config")
-    .update({ data: portfolioData as unknown as Record<string, unknown>, updated_at: new Date().toISOString() })
+    .update({ data: JSON.parse(JSON.stringify(portfolioData)), updated_at: new Date().toISOString() })
     .eq("id", 1);
 
   if (error) throw error;

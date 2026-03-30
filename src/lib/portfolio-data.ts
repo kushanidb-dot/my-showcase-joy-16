@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export interface Project {
   id: string;
   title: string;
@@ -28,38 +30,10 @@ const DEFAULT_DATA: PortfolioData = {
   bio: "I'm a designer, video editor & visual storyteller — crafting compelling narratives through motion, visuals, and thoughtful design.",
   email: "hello@example.com",
   projects: [
-    {
-      id: "1",
-      title: "Brand Film",
-      subtitle: "Video Production & Editing",
-      imageUrl: "https://images.unsplash.com/photo-1536240478700-b869070f9279?w=600&h=400&fit=crop",
-      link: "#",
-      featured: true,
-    },
-    {
-      id: "2",
-      title: "Visual Identity",
-      subtitle: "Brand Design",
-      imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop",
-      link: "#",
-      featured: true,
-    },
-    {
-      id: "3",
-      title: "Motion Reel",
-      subtitle: "Motion Graphics",
-      imageUrl: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&h=400&fit=crop",
-      link: "#",
-      featured: false,
-    },
-    {
-      id: "4",
-      title: "Documentary Short",
-      subtitle: "Storytelling & Direction",
-      imageUrl: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=600&h=400&fit=crop",
-      link: "#",
-      featured: false,
-    },
+    { id: "1", title: "Brand Film", subtitle: "Video Production & Editing", imageUrl: "https://images.unsplash.com/photo-1536240478700-b869070f9279?w=600&h=400&fit=crop", link: "#", featured: true },
+    { id: "2", title: "Visual Identity", subtitle: "Brand Design", imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop", link: "#", featured: true },
+    { id: "3", title: "Motion Reel", subtitle: "Motion Graphics", imageUrl: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&h=400&fit=crop", link: "#", featured: false },
+    { id: "4", title: "Documentary Short", subtitle: "Storytelling & Direction", imageUrl: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=600&h=400&fit=crop", link: "#", featured: false },
   ],
   writings: [
     { id: "1", title: "The art of visual storytelling", url: "#", date: "2025" },
@@ -73,18 +47,28 @@ const DEFAULT_DATA: PortfolioData = {
   ],
 };
 
-const STORAGE_KEY = "portfolio-data";
-
-export function getPortfolioData(): PortfolioData {
+export async function getPortfolioData(): Promise<PortfolioData> {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return DEFAULT_DATA;
+    const { data, error } = await supabase
+      .from("portfolio_config")
+      .select("data")
+      .eq("id", 1)
+      .single();
+
+    if (error || !data) return DEFAULT_DATA;
+    return data.data as unknown as PortfolioData;
+  } catch {
+    return DEFAULT_DATA;
+  }
 }
 
-export function savePortfolioData(data: PortfolioData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+export async function savePortfolioData(portfolioData: PortfolioData) {
+  const { error } = await supabase
+    .from("portfolio_config")
+    .update({ data: JSON.parse(JSON.stringify(portfolioData)), updated_at: new Date().toISOString() })
+    .eq("id", 1);
+
+  if (error) throw error;
 }
 
 export function generateId() {

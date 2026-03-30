@@ -6,11 +6,13 @@ import WritingsSection from "@/components/WritingsSection";
 import FooterSection from "@/components/FooterSection";
 
 const Index = () => {
-  const [data, setData] = useState<PortfolioData>(getPortfolioData());
+  const [data, setData] = useState<PortfolioData | null>(null);
 
   useEffect(() => {
-    setData(getPortfolioData());
+    getPortfolioData().then(setData);
   }, []);
+
+  if (!data) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
 
   return (
     <div className="min-h-screen">

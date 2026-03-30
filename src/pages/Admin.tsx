@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getPortfolioData, savePortfolioData, PortfolioData, generateId } from "@/lib/portfolio-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,16 +8,31 @@ import { toast } from "sonner";
 import { Trash2, Plus, ArrowLeft, Save } from "lucide-react";
 
 const Admin = () => {
-  const [data, setData] = useState<PortfolioData>(getPortfolioData());
+  const [data, setData] = useState<PortfolioData | null>(null);
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
-  const handleSave = () => {
-    savePortfolioData(data);
-    toast.success("Portfolio saved!");
+  useEffect(() => {
+    getPortfolioData().then(setData);
+  }, []);
+
+  const handleSave = async () => {
+    if (!data) return;
+    setSaving(true);
+    try {
+      await savePortfolioData(data);
+      toast.success("Portfolio saved!");
+    } catch {
+      toast.error("Failed to save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
+  if (!data) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+
   const updateField = <K extends keyof PortfolioData>(key: K, value: PortfolioData[K]) => {
-    setData((prev) => ({ ...prev, [key]: value }));
+    setData((prev) => prev ? { ...prev, [key]: value } : prev);
   };
 
   const addProject = () => {
@@ -32,10 +47,7 @@ const Admin = () => {
   };
 
   const updateProject = (id: string, field: string, value: string | boolean) => {
-    updateField(
-      "projects",
-      data.projects.map((p) => (p.id === id ? { ...p, [field]: value } : p))
-    );
+    updateField("projects", data.projects.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
   };
 
   const addWriting = () => {
@@ -50,10 +62,7 @@ const Admin = () => {
   };
 
   const updateWriting = (id: string, field: string, value: string) => {
-    updateField(
-      "writings",
-      data.writings.map((w) => (w.id === id ? { ...w, [field]: value } : w))
-    );
+    updateField("writings", data.writings.map((w) => (w.id === id ? { ...w, [field]: value } : w)));
   };
 
   const addSocial = () => {
@@ -65,10 +74,7 @@ const Admin = () => {
   };
 
   const updateSocial = (i: number, field: string, value: string) => {
-    updateField(
-      "socialLinks",
-      data.socialLinks.map((s, idx) => (idx === i ? { ...s, [field]: value } : s))
-    );
+    updateField("socialLinks", data.socialLinks.map((s, idx) => (idx === i ? { ...s, [field]: value } : s)));
   };
 
   return (
@@ -77,8 +83,8 @@ const Admin = () => {
         <button onClick={() => navigate("/")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-4 w-4" /> Back to site
         </button>
-        <Button onClick={handleSave} className="gap-2">
-          <Save className="h-4 w-4" /> Save Changes
+        <Button onClick={handleSave} disabled={saving} className="gap-2">
+          <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save Changes"}
         </Button>
       </div>
 
@@ -117,12 +123,7 @@ const Admin = () => {
           {data.projects.map((project) => (
             <div key={project.id} className="bg-card rounded-xl p-5 space-y-3 border border-border">
               <div className="flex justify-between items-start">
-                <Input
-                  value={project.title}
-                  onChange={(e) => updateProject(project.id, "title", e.target.value)}
-                  placeholder="Title"
-                  className="font-medium"
-                />
+                <Input value={project.title} onChange={(e) => updateProject(project.id, "title", e.target.value)} placeholder="Title" className="font-medium" />
                 <Button variant="ghost" size="icon" onClick={() => removeProject(project.id)} className="text-destructive ml-2 shrink-0">
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -131,12 +132,7 @@ const Admin = () => {
               <Input value={project.imageUrl} onChange={(e) => updateProject(project.id, "imageUrl", e.target.value)} placeholder="Image URL" />
               <Input value={project.link} onChange={(e) => updateProject(project.id, "link", e.target.value)} placeholder="Project Link" />
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={project.featured}
-                  onChange={(e) => updateProject(project.id, "featured", e.target.checked)}
-                  className="accent-primary"
-                />
+                <input type="checkbox" checked={project.featured} onChange={(e) => updateProject(project.id, "featured", e.target.checked)} className="accent-primary" />
                 Featured
               </label>
             </div>
@@ -192,8 +188,8 @@ const Admin = () => {
       </section>
 
       <div className="pt-6 border-t border-border">
-        <Button onClick={handleSave} className="w-full gap-2">
-          <Save className="h-4 w-4" /> Save All Changes
+        <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
+          <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save All Changes"}
         </Button>
       </div>
     </div>
